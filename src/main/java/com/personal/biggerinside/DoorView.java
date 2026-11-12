@@ -48,6 +48,9 @@ public final class DoorView {
     private static boolean botiHandled;
     private static int botiTries;
     private static boolean loggedFirst;
+    private static boolean loggedOpenError;
+    private static boolean loggedBehind;
+    private static String lastSummary = "";
 
     private DoorView() {
     }
@@ -69,7 +72,10 @@ public final class DoorView {
                 lastScan = now;
                 scan(level, mc.player.blockPosition());
             }
-            if (EXTERIORS.isEmpty()) return;
+            if (EXTERIORS.isEmpty()) {
+                summary(0, 0, 0, 0);
+                return;
+            }
 
             Vec3 cam = event.getCamera().getPosition();
             double range = ViewConfig.RANGE.get();
@@ -82,15 +88,23 @@ public final class DoorView {
                 if (!isDoorOpen(be)) continue;
                 open.add(new Candidate(be, d));
             }
-            if (open.isEmpty()) return;
+            if (open.isEmpty()) {
+                summary(EXTERIORS.size(), 0, 0, 0);
+                return;
+            }
             open.sort(Comparator.comparingDouble(Candidate::dist));
 
             double time = ViewConfig.ANIMATE.get() ? (now + event.getPartialTick()) / 20.0 : 0.0;
             int count = Math.min(open.size(), Math.min(MAX_TEX, ViewConfig.MAX_DOORS.get()));
             boolean stateSet = false;
+            int drawn = 0;
             for (int i = 0; i < count; i++) {
-                if (drawDoor(i, open.get(i).be(), event, cam, time, !stateSet)) stateSet = true;
+                if (drawDoor(i, open.get(i).be(), event, cam, time, !stateSet)) {
+                    stateSet = true;
+                    drawn++;
+                }
             }
+            summary(EXTERIORS.size(), open.size(), drawn, 0);
             if (stateSet) {
                 RenderSystem.enableCull();
                 RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
@@ -100,6 +114,14 @@ public final class DoorView {
                 loggedFirst = true;
                 BiggerInsideMod.LOGGER.warn("Doorway view skipped a frame: {}", t.toString());
             }
+        }
+    }
+
+    private static void summary(int found, int open, int drawn, int unused) {
+        String s = "exteriors=" + found + " openDoors=" + open + " drawn=" + drawn;
+        if (!s.equals(lastSummary)) {
+            lastSummary = s;
+            BiggerInsideMod.LOGGER.info("Doorway view: {}", s);
         }
     }
 
@@ -131,12 +153,24 @@ public final class DoorView {
             Object door = AitBridge.call(tardis, "door");
             if (!(AitBridge.call(door, "isOpen") instanceof Boolean open) || !open) return false;
             if (ViewConfig.REQUIRE_LANDED.get()) {
-                Object travel = AitBridge.call(tardis, "travel");
-                Object state = AitBridge.call(travel, "getState");
-                if (!"LANDED".equals(String.valueOf(state))) return false;
+                try {
+                    Object travel = AitBridge.call(tardis, "travel");
+                    Object state = AitBridge.call(travel, "getState");
+                    String name = String.valueOf(state);
+                    if (name.contains("DEMAT") || name.contains("FLIGHT") || name.contains("REMAT")
+                            || name.contains("MAT") && !name.contains("LANDED")) {
+                        return false;
+                    }
+                } catch (Throwable ignored) {
+                    // cannot tell the travel state: just show the view
+                }
             }
             return true;
         } catch (Throwable t) {
+            if (!loggedOpenError) {
+                loggedOpenError = true;
+                BiggerInsideMod.LOGGER.warn("Could not read a TARDIS door state: {}", t.toString());
+            }
             return false;
         }
     }
@@ -153,7 +187,7 @@ public final class DoorView {
 
     private static boolean drawDoor(int slot, BlockEntity be, RenderLevelStageEvent event, Vec3 cam, double time, boolean setState) {
         double yaw = Math.toRadians(rotationOf(be) * 22.5 + ViewConfig.FACING_OFFSET.get());
-        double fx = -Math.sin(yaw), fz = Math.cos(yaw);   // outward direction of the door
+        double fx = Math.sin(yaw), fz = Math.cos(yaw);    // outward direction of the door
         double rx = -fz, rz = fx;                         // viewer's right when looking at the door
 
         BlockPos bp = be.getBlockPos();
@@ -164,7 +198,14 @@ public final class DoorView {
 
         double relx = cam.x - cxw, rely = cam.y - cyw, relz = cam.z - czw;
         double ez = relx * fx + relz * fz;
-        if (ez < 0.12) return false;                      // behind the doorway: nothing to show
+        if (ez < 0.12) {                                  // behind the doorway: nothing to show
+            if (!loggedBehind) {
+                loggedBehind = true;
+                BiggerInsideMod.LOGGER.info("Doorway view: you are on the back side of this TARDIS's door as the add-on sees it. "
+                        + "If you are standing in front of the door, set facingOffsetDegrees to 180 in biggerinside-client.toml.");
+            }
+            return false;
+        }
         double ex = relx * rx + relz * rz;
 
         double hw = ViewConfig.DOOR_WIDTH.get() / 2.0;

@@ -41,7 +41,7 @@ public final class ViewConfig {
                 .defineInRange("doorBottom", 0.06, -0.5, 1.0);
         PLANE_OFFSET = b.comment("How far from the middle of the block the doorway picture sits, toward the door.",
                         "Raise it if the picture is hidden inside the box, lower it if it floats in front of the door.")
-                .defineInRange("planeOffset", 0.46, 0.2, 0.6);
+                .defineInRange("planeOffset", 0.48, 0.2, 0.6);
         FACING_OFFSET = b.comment("If the picture shows on the wrong side of the box, set this to 90, 180 or 270 (degrees).")
                 .defineInRange("facingOffsetDegrees", 0.0, -360.0, 360.0);
         SPEC = b.build();
