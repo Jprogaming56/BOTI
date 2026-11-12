@@ -1,0 +1,32 @@
+modLoader = "javafml"
+loaderVersion = "[47,)"
+license = "All Rights Reserved"
+
+[[mods]]
+modId = "biggerinside"
+version = "1.0.0"
+displayName = "Bigger On The Inside"
+description = '''
+Add-on for Adventures in Time (AIT Forger). When a TARDIS door is open, the doorway shows a huge Renaissance-style hall that shifts as you move, so the police box really looks bigger on the inside.
+'''
+
+[[dependencies.biggerinside]]
+modId = "forge"
+mandatory = true
+versionRange = "[47,)"
+ordering = "NONE"
+side = "CLIENT"
+
+[[dependencies.biggerinside]]
+modId = "minecraft"
+mandatory = true
+versionRange = "[1.20.1,1.21)"
+ordering = "NONE"
+side = "CLIENT"
+
+[[dependencies.biggerinside]]
+modId = "ait"
+mandatory = true
+versionRange = "*"
+ordering = "AFTER"
+side = "CLIENT"
