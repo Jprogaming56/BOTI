@@ -5,6 +5,7 @@ import net.minecraftforge.common.ForgeConfigSpec;
 public final class ViewConfig {
     public static final ForgeConfigSpec SPEC;
     public static final ForgeConfigSpec.BooleanValue ENABLED;
+    public static final ForgeConfigSpec.BooleanValue DEBUG_OVERLAY;
     public static final ForgeConfigSpec.BooleanValue DISABLE_AIT_BOTI;
     public static final ForgeConfigSpec.BooleanValue REQUIRE_LANDED;
     public static final ForgeConfigSpec.BooleanValue ANIMATE;
@@ -21,6 +22,8 @@ public final class ViewConfig {
         ForgeConfigSpec.Builder b = new ForgeConfigSpec.Builder();
         ENABLED = b.comment("Draw the huge hall in the doorway when a TARDIS door is open.")
                 .define("enabled", true);
+        DEBUG_OVERLAY = b.comment("Show a small status line above the hotbar while a TARDIS is nearby (for troubleshooting). Turn off once it works.")
+                .define("debugOverlay", true);
         DISABLE_AIT_BOTI = b.comment("Switch off AiT's own doorway view while this add-on is running, so the two do not draw on top of each other.")
                 .define("disableAitBoti", true);
         REQUIRE_LANDED = b.comment("Only show the hall while the TARDIS is landed (not while it is dematerialising or materialising).")
@@ -41,7 +44,7 @@ public final class ViewConfig {
                 .defineInRange("doorBottom", 0.06, -0.5, 1.0);
         PLANE_OFFSET = b.comment("How far from the middle of the block the doorway picture sits, toward the door.",
                         "Raise it if the picture is hidden inside the box, lower it if it floats in front of the door.")
-                .defineInRange("planeOffset", 0.48, 0.2, 0.6);
+                .defineInRange("planeOffset", 0.485, 0.2, 0.6);
         FACING_OFFSET = b.comment("If the picture shows on the wrong side of the box, set this to 90, 180 or 270 (degrees).")
                 .defineInRange("facingOffsetDegrees", 0.0, -360.0, 360.0);
         SPEC = b.build();

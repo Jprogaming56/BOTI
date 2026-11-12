@@ -12,6 +12,7 @@ import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -50,6 +51,8 @@ public final class DoorView {
     private static boolean loggedFirst;
     private static boolean loggedOpenError;
     private static boolean loggedBehind;
+    private static String doorDebug = "";
+    private static long lastOverlay = Long.MIN_VALUE;
     private static String lastSummary = "";
 
     private DoorView() {
@@ -106,6 +109,8 @@ public final class DoorView {
             }
             summary(EXTERIORS.size(), open.size(), drawn, 0);
             if (stateSet) {
+                RenderSystem.polygonOffset(0.0f, 0.0f);
+                RenderSystem.disablePolygonOffset();
                 RenderSystem.enableCull();
                 RenderSystem.setShaderColor(1f, 1f, 1f, 1f);
             }
@@ -119,6 +124,14 @@ public final class DoorView {
 
     private static void summary(int found, int open, int drawn, int unused) {
         String s = "exteriors=" + found + " openDoors=" + open + " drawn=" + drawn;
+        if (ViewConfig.DEBUG_OVERLAY.get() && found > 0) {
+            Minecraft mc = Minecraft.getInstance();
+            long t = mc.level == null ? 0 : mc.level.getGameTime();
+            if (mc.player != null && (lastOverlay == Long.MIN_VALUE || Math.abs(t - lastOverlay) >= 10)) {
+                lastOverlay = t;
+                mc.player.displayClientMessage(Component.literal("BiggerInside: " + s + " " + doorDebug), true);
+            }
+        }
         if (!s.equals(lastSummary)) {
             lastSummary = s;
             BiggerInsideMod.LOGGER.info("Doorway view: {}", s);
@@ -207,6 +220,7 @@ public final class DoorView {
             return false;
         }
         double ex = relx * rx + relz * rz;
+        doorDebug = String.format("rot=%d ez=%.1f ex=%.1f", rotationOf(be), ez, ex);
 
         double hw = ViewConfig.DOOR_WIDTH.get() / 2.0;
         double dh = ViewConfig.DOOR_HEIGHT.get();
@@ -245,6 +259,8 @@ public final class DoorView {
             RenderSystem.depthMask(true);
             RenderSystem.disableCull();
             RenderSystem.disableBlend();
+            RenderSystem.enablePolygonOffset();
+            RenderSystem.polygonOffset(-3.0f, -3.0f);
         }
         RenderSystem.setShaderTexture(0, TEX_ID[slot]);
 
